@@ -15,12 +15,11 @@ from .app_settings import app_settings
 from .adapters import get_invitations_adapter
 from . import signals
 
-
 @python_2_unicode_compatible
 class Invitation(models.Model):
-
-    email = models.EmailField(unique=True, verbose_name=_('e-mail address'),
-                              max_length=app_settings.EMAIL_MAX_LENGTH)
+    email = models.EmailField(
+        unique=(app_settings.ALLOW_DUPLICATE_EMAILS is False), 
+        verbose_name=_('e-mail address'), max_length=app_settings.EMAIL_MAX_LENGTH)
     accepted = models.BooleanField(verbose_name=_('accepted'), default=False)
     created = models.DateTimeField(verbose_name=_('created'),
                                    default=timezone.now)

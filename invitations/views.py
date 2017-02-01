@@ -7,6 +7,7 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import redirect
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.core.urlresolvers import reverse
 
 from braces.views import LoginRequiredMixin
 
@@ -86,7 +87,6 @@ class SendJSONInvite(LoginRequiredMixin, View):
             json.dumps(response),
             status=status_code, content_type='application/json')
 
-
 class AcceptInvite(SingleObjectMixin, View):
     form_class = InviteForm
 
@@ -104,8 +104,9 @@ class AcceptInvite(SingleObjectMixin, View):
         # previously accepted key.
         if app_settings.GONE_ON_ACCEPT_ERROR and \
                 (not invitation or
-                 (invitation and (invitation.accepted or
-                                  invitation.key_expired()))):
+                 (invitation and ((invitation.accepted 
+                                   and not app_settings.ACCEPT_INVITE_AFTER_LOGIN) 
+                                  or invitation.key_expired()))):
             return HttpResponse(status=410)
 
         # No invitation was found.
@@ -117,9 +118,16 @@ class AcceptInvite(SingleObjectMixin, View):
                 'invitations/messages/invite_invalid.txt')
             return redirect(app_settings.LOGIN_REDIRECT)
 
+        # The invite may have been accepted as part of a login rather than
+        # a signup. Redirect to the contrib.auth.login view's standard
+        # for after-login redirection.
+        if invitation.accepted and app_settings.ACCEPT_INVITE_AFTER_LOGIN:
+            return redirect(
+                app_settings.AFTER_LOGIN_REDIRECT or '/accounts/profile/')
+
         # The invitation was previously accepted, redirect to the login
         # view.
-        if invitation.accepted:
+        elif invitation.accepted:
             get_invitations_adapter().add_message(
                 self.request,
                 messages.ERROR,
@@ -147,8 +155,14 @@ class AcceptInvite(SingleObjectMixin, View):
 
         get_invitations_adapter().stash_verified_email(
             self.request, invitation.email)
-
-        return redirect(app_settings.SIGNUP_REDIRECT)
+            
+        if app_settings.ACCEPT_INVITE_AFTER_LOGIN:
+            next_uri = reverse('invitations:accept-invite', args=[invitation.key])
+            redirect_url = "%s?next=%s/" % (reverse(app_settings.SIGNUP_REDIRECT), next_uri)
+        else:
+            redirect_url = app_settings.SIGNUP_REDIRECT
+        print redirect_url
+        return redirect(redirect_url)
 
     def get_object(self, queryset=None):
         if queryset is None:

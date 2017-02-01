@@ -52,6 +52,16 @@ class AppSettings(object):
     def LOGIN_REDIRECT(self):
         """ Where to redirect on an expired or already accepted invite """
         return self._setting('LOGIN_REDIRECT', settings.LOGIN_URL)
+        
+    @property
+    def AFTER_LOGIN_REDIRECT(self):
+        """ 
+        Where to redirect on an already accepted invite if 
+        ACCEPT_INVITE_AFTER_LOGIN is True
+        """
+        return (
+            self._setting('AFTER_LOGIN_REDIRECT', 
+            getattr(settings, 'LOGIN_REDIRECT_URL', None)))
 
     @property
     def ADAPTER(self):
@@ -79,5 +89,22 @@ class AppSettings(object):
         Model used to link with the invitation
         """
         return self._setting("CUSTOM_INVITER_MODEL", settings.AUTH_USER_MODEL)
+        
+    @property
+    def ALLOW_DUPLICATE_EMAILS(self):
+        """
+        Allows more than one invite for the same email. After changing
+        this, you need to make and run a migation.
+        """
+        return self._setting("ALLOW_DUPLICATE_EMAILS", False)
+        
+    @property
+    def ACCEPT_INVITE_AFTER_LOGIN(self):
+        """
+        Makes it possible to log in with an existing account or sign
+        up with social media and then be redirected afterward to accept
+        the invitation.
+        """
+        return self._setting("ACCEPT_INVITE_AFTER_LOGIN", False)
 
 app_settings = AppSettings('INVITATIONS_')
