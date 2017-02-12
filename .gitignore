@@ -7,3 +7,4 @@ django_invitations.egg-info/
 .gitchangelog.rc
 .python-version
 .coverage
+invitations/migrations/0005_auto_20170131_0837.py

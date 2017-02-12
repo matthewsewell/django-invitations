@@ -29,6 +29,13 @@ class Invitation(models.Model):
         app_settings.CUSTOM_INVITER_MODEL, null=True, blank=True)
 
     objects = InvitationManager()
+    
+    @property
+    def inviter_email(self):
+        try:
+            return self.inviter.email
+        except AttributeError:
+            return None
 
     @classmethod
     def create(cls, email, inviter=None):
